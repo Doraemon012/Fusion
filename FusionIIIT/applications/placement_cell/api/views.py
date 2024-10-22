@@ -1,6 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
 from django.shortcuts import get_object_or_404, redirect, render
+
 from rest_framework import status,permissions
 from django.contrib.auth.models import User
 from django.http import JsonResponse
@@ -67,7 +69,9 @@ class PlacementScheduleView(APIView):
                 time=schedule_at,
             )
 
+
             return redirect('placement')
+
             return JsonResponse({"message": "Successfully Added Schedule"}, status=201)
 
         except Exception as e:
@@ -124,7 +128,9 @@ def placement_schedule_save(request):
 
 
 class BatchStatisticsView(APIView):
+
     permission_classes = [permissions.AllowAny]
+
     def get(self, request):
         combined_data = []
         student_records = StudentRecord.objects.all()
@@ -134,6 +140,7 @@ class BatchStatisticsView(APIView):
 
         for student in student_records:
             try:
+
                 cur_student = Student.objects.get(id_id=student.unique_id_id)
                 cur_placement = PlacementRecord.objects.get(id=student.record_id_id)
                 user = User.objects.get(username=student.unique_id_id)
@@ -141,6 +148,7 @@ class BatchStatisticsView(APIView):
                 combined_entry = {
                     "branch": cur_student.specialization, 
                     "batch" : cur_placement.year, 
+
                     "placement_name": cur_placement.name,  
                     "ctc": cur_placement.ctc, 
                     "year": cur_placement.year, 
@@ -162,6 +170,7 @@ class BatchStatisticsView(APIView):
             return Response({"message": "No combined data found"}, status=status.HTTP_204_NO_CONTENT)
 
         return Response(combined_data, status=status.HTTP_200_OK)
+
 
     def post(self,request):
         placement_type=request.POST.get("placement_type")
@@ -190,5 +199,14 @@ class BatchStatisticsView(APIView):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
             
+
+    
+
+
+
+
+
+
+
 
 
