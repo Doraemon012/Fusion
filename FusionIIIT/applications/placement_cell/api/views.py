@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import status,permissions
 from django.contrib.auth.models import User
 from django.http import JsonResponse
@@ -66,6 +67,7 @@ class PlacementScheduleView(APIView):
                 time=schedule_at,
             )
 
+            return redirect('placement')
             return JsonResponse({"message": "Successfully Added Schedule"}, status=201)
 
         except Exception as e:
@@ -122,6 +124,7 @@ def placement_schedule_save(request):
 
 
 class BatchStatisticsView(APIView):
+    permission_classes = [permissions.AllowAny]
     def get(self, request):
         combined_data = []
         student_records = StudentRecord.objects.all()
@@ -131,12 +134,13 @@ class BatchStatisticsView(APIView):
 
         for student in student_records:
             try:
-                cur_student = Student.objects.get(id=student.unique_id)
-                cur_placement = PlacementRecord.objects.get(id=student.record_id)
-                user = User.objects.get(id=student.unique_id)
+                cur_student = Student.objects.get(id_id=student.unique_id_id)
+                cur_placement = PlacementRecord.objects.get(id=student.record_id_id)
+                user = User.objects.get(username=student.unique_id_id)
 
                 combined_entry = {
-                    "branch": cur_student.branch,  
+                    "branch": cur_student.specialization, 
+                    "batch" : cur_placement.year, 
                     "placement_name": cur_placement.name,  
                     "ctc": cur_placement.ctc, 
                     "year": cur_placement.year, 
@@ -159,38 +163,32 @@ class BatchStatisticsView(APIView):
 
         return Response(combined_data, status=status.HTTP_200_OK)
 
-    # def get(self, request):
-    #     combined_data = []
+    def post(self,request):
+        placement_type=request.POST.get("placement_type")
+        company_name=request.POST.get("company_name")
+        roll_no = request.POST.get("roll_no")
+        ctc=request.POST.get("ctc")
+        year=request.POST.get("year")
+        test_type=request.POST.get("test_type")
+        test_score=request.POST.get("test_score")
 
-    #     # Get all student records
-    #     student_records = StudentRecord.objects.all()
-
-    #     for student in student_records:
-    #         # Get the current student, placement record, and user
-    #         cur_student = Student.objects.get(id=student.unique_id)
-    #         cur_placement = PlacementRecord.objects.get(id=student.record_id)
-    #         user = User.objects.get(username=student.unique_id)
-
-    #         # Combine the required fields into a dictionary
-    #         combined_entry = {
-    #             "branch": cur_student.branch,  # Assuming branch is a field in the Student model
-    #             "placement_name": cur_placement.name,  # Name field from PlacementRecord
-    #             "ctc": cur_placement.ctc,  # CTC field from PlacementRecord
-    #             "year": cur_placement.year,  # Year field from PlacementRecord
-    #             "first_name": user.first_name  # First name field from User
-    #         }
+        try:
+            p2 = PlacementRecord.objects.create(
+                placement_type = placement_type,
+                name = company_name,
+                ctc = ctc,
+                year = year,
+                test_score = test_score,
+                test_type = test_type,
+            )
+            p1 = StudentRecord.objects.create(
+                record_id = p2,
+                unique_id_id = roll_no,
+            )
+            return JsonResponse({"message": "Successfully Added"}, status=201)
+    
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
             
-    #         # Append the combined data to the list
-    #         combined_data.append(combined_entry)
-
-    #     return Response(combined_data, status=status.HTTP_200_OK)
-
-
-
-
-
-
-
-
 
 
