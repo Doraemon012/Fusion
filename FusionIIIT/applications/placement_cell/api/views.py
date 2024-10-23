@@ -76,6 +76,9 @@ class PlacementScheduleView(APIView):
             )
 
 
+
+            return redirect('placement')
+
             return JsonResponse({"message": "Successfully Added Schedule"}, status=201)
 
         except Exception as e:
@@ -224,6 +227,7 @@ class BatchStatisticsView(APIView):
             return Response({"message": "No combined data found"}, status=status.HTTP_204_NO_CONTENT)
 
         return Response(combined_data, status=status.HTTP_200_OK)
+
 
 
     def post(self,request):
