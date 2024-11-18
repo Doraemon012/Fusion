@@ -10,5 +10,6 @@ urlpatterns = [
     path('apply-placement/',ApplyForPlacement.as_view(),name="apply"),
     path('student-applications/<int:id>/',ApplyForPlacement.as_view()),
     path('calender/',NextRoundDetails.as_view()),
+    path('nextround/<int:id>/',NextRoundDetails.as_view()),
     path('timeline/<int:id>/',TrackStatus.as_view()),
 ]
