@@ -12,4 +12,6 @@ urlpatterns = [
     path('calender/',NextRoundDetails.as_view()),
     path('nextround/<int:id>/',NextRoundDetails.as_view()),
     path('timeline/<int:id>/',TrackStatus.as_view()),
+    path('download-applications/<int:id>/',DownloadApplications.as_view()),
+    path('download-statistics/',DownloadStatistics.as_view()),
 ]

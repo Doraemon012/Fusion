@@ -18,6 +18,7 @@ from applications.academic_information.api.serializers import StudentSerializers
 import datetime
 import io
 from reportlab.pdfgen import canvas
+from openpyxl import Workbook
 
 @method_decorator(csrf_exempt, name='dispatch')
 @permission_classes([IsAuthenticated])
@@ -143,8 +144,6 @@ class PlacementScheduleView(APIView):
 
 @permission_classes([IsAuthenticated]) 
 class BatchStatisticsView(APIView):
-
-    permission_classes = [permissions.AllowAny]
 
     def get(self, request):
         combined_data = []
@@ -551,18 +550,20 @@ class NextRoundDetails(APIView):
 
 
 
-
+@permission_classes([IsAuthenticated])
 class TrackStatus(APIView):
     def get(self,request,id):
         user = request.user
         profile = get_object_or_404(ExtraInfo, user=user)
         roll_no = profile.id
-        if user.username=='omvir' and user.username=='anilk':
+        status='reject'
+        if user.username!='omvir' and user.username!='anilk':
             application = StudentApplication.objects.get(unique_id_id=roll_no, schedule_id_id=id)
+            status = application.current_status
         data = []
 
 
-        if user.username=='omvir' or user.username=='anilk' or application.current_status != 'reject':
+        if user.username=='omvir' or user.username=='anilk' or status != 'reject':
             rounds = NextRoundInfo.objects.filter(schedule_id_id=id).order_by('round_no')
             round_count = rounds.count()
 
@@ -595,7 +596,79 @@ class TrackStatus(APIView):
 
         return Response({'next_data': data}, status=200)
 
+@permission_classes([IsAuthenticated])
+class DownloadApplications(APIView):
+    def get(self, request, id):
+        schedule = get_object_or_404(PlacementSchedule, id=id)
+        applications = StudentApplication.objects.filter(schedule_id_id=schedule.id)
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Applications"
+
+        headers = ['ID', 'Name', 'Roll Number', 'Email', 'CPI', 'Status']
+        ws.append(headers)
+
+        for application in applications:
+            roll_no = application.unique_id_id
+            student = get_object_or_404(Student, id_id=roll_no)
+            user = get_object_or_404(User, username=roll_no)
+
+            row = [
+                application.id,
+                f"{user.first_name} {user.last_name}",
+                roll_no,
+                user.email,
+                student.cpi,
+                application.current_status,
+            ]
+            ws.append(row)
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="applications_{schedule.title}.xlsx"'
+
+        wb.save(response)
+        return response
 
 
+@permission_classes([IsAuthenticated])
+class DownloadStatistics(APIView):
+    def get(self, request):
+        student_records = StudentRecord.objects.all()
 
+        if not student_records.exists():
+            return Response({"error": "No student records found"}, status=status.HTTP_404_NOT_FOUND)
 
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Placement Statistics"
+
+        headers = ['First Name', 'Placement Name', 'Batch', 'Branch', 'CTC', 'Year']
+        ws.append(headers)
+
+        for student in student_records:
+            try:
+                cur_student = Student.objects.get(id_id=student.unique_id_id)
+                cur_placement = PlacementRecord.objects.get(id=student.record_id_id)
+                user = User.objects.get(username=student.unique_id_id)
+
+                row = [
+                    user.first_name,
+                    cur_placement.name,
+                    cur_placement.year,
+                    cur_student.specialization,
+                    cur_placement.ctc,
+                    cur_placement.year,
+                ]
+                ws.append(row)
+
+            except (Student.DoesNotExist, PlacementRecord.DoesNotExist, User.DoesNotExist) as e:
+                continue
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="placement_statistics.xlsx"'
+
+        wb.save(response)
+        return response
