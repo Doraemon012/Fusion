@@ -476,16 +476,16 @@ class PlacementForm_responses(models.Model):
         return str(self.unique_id.id)
     
 
-# class company_registration(models.Model):
-#     name = models.CharField(max_length=50)
-#     description = models.CharField(max_length=100)
-#     address = models.CharField(max_length=100)
-#     web_url = models.URLField()
-#     # company_logo = models.ImageField()
+class company_registration(models.Model):
+    name = models.CharField(max_length=50)
+    description = models.CharField(max_length=100)
+    address = models.CharField(max_length=100)
+    web_url = models.URLField()
+    company_logo = models.ImageField(upload_to='placement_cell/company_logos/')
 
     
-#     def _str_(self):
-#         return str(self.name)
+    def _str_(self):
+        return str(self.name)
 
 class GlobalRestrictions(models.Model):
     criteria = models.CharField(max_length=20)

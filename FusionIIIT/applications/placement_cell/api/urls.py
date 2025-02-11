@@ -19,4 +19,5 @@ urlpatterns = [
     path('debared-status/<str:id>/',DebaredDetails.as_view()),
     path('add-field/',FieldsAddition.as_view()),
     path('restrictions/',GlobalRestriction.as_view()),
+    path('registration/',CompanyRegistration.as_view()),
 ]

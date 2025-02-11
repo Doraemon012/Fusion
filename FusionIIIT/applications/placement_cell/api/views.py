@@ -33,15 +33,39 @@ from rest_framework.test import APIRequestFactory
 class PlacementScheduleView(APIView):
 
     def get(self, request):        
-        debar_status = DebarStudentInfo.objects.filter(unique_id_id = request.user.username).count()
-        if debar_status == 1 :
-            return Response([],status=status.HTTP_200_OK)
-        
+
+
         combined_data = []
         notify_students = NotifyStudent.objects.all()
 
         if request.user.username != 'omvir' and request.user.username!='anilk':
             student = Student.objects.get(id_id=request.user.username)
+            debar_status = DebarStudentInfo.objects.filter(unique_id_id = request.user.username).count()
+            global_restrictions = GlobalRestrictions.objects.all()
+            for global_restriction in global_restrictions:
+                value = global_restriction.value  
+                if global_restriction.criteria == "company":
+                    statistics = PlacementRecord.objects.get(name=value)
+                    record = StudentRecord.objects.filter(unique_id_id=request.user.username,record_id=statistics).count()
+                    if global_restriction.condition == "equal" and record==1:
+                        debar_status=1
+                    elif global_restriction.condition == "not_equal" and record==0:
+                        debar_status=1
+
+                if global_restriction.criteria == "ctc":
+                    value = int(value)
+                    statistics = StudentRecord.objects.filter(unique_id_id=request.user.username).count()
+                    if statistics!=0:
+                        statistics = StudentRecord.objects.get(unique_id_id=request.user.username)
+                        statistic = PlacementRecord.objects.get(id=statistics.record_id_id)
+                        if statistic.ctc > value and global_restriction.condition=="greater_than":
+                            debar_status = 1
+                        if statistic.ctc < value and global_restriction.condition=="less_than":
+                            debar_status = 1
+                        
+
+            if debar_status == 1 :
+                return Response([],status=status.HTTP_200_OK)
         extra_info = ExtraInfo.objects.get(id=request.user.username)
         cur_gender = "Female"
         if extra_info.sex == 'M':
@@ -868,3 +892,47 @@ class GlobalRestriction(APIView):
         
 
     # have to write for put and delete
+
+
+@permission_classes([IsAuthenticated])
+class CompanyRegistration(APIView):
+    def post(self,request):
+        try:
+            companyName = request.data.get('companyName')
+            description = request.data.get('description')
+            address = request.data.get('address')
+            website = request.data.get('website')
+            logo = request.FILES.get('logo')
+
+            company = company_registration.objects.create(
+                name=companyName,
+                description=description,
+                address=address,
+                web_url=website,
+                company_logo=logo,
+            )
+
+            return Response("created",status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            print(e)
+            return Response("failed",status=status.HTTP_304_NOT_MODIFIED)
+        
+    def get(self, request):
+        try:
+            companies = company_registration.objects.all()
+            data = []
+            for comp in companies:
+                data.append({
+                    "id": comp.id,
+                    "name": comp.name,
+                    "description": comp.description,
+                    "address": comp.address,
+                    "web_url": comp.web_url,
+                    "company_logo": request.build_absolute_uri(comp.company_logo.url) if comp.company_logo else None,
+                })
+            return Response(data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print(e)
+            return Response("failed", status=status.HTTP_304_NOT_MODIFIED)
