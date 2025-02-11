@@ -8,6 +8,7 @@ from rest_framework.generics import ListAPIView
 from notifications.models import Notification
 from rest_framework import status
 from .serializers import NotificationSerializer
+from django.contrib.auth.models import User
 from notification.views import (leave_module_notif,
     placement_cell_notif,
     academics_module_notif,
@@ -54,8 +55,8 @@ class PlacementCellNotificationAPIView(APIView):
         sender = request.user
         recipient_id = request.data.get('recipient')
         type = request.data.get('type')
-        User = get_user_model()
-        recipient = User.objects.get(pk=recipient_id)
+        # User = get_user_model()
+        recipient = User.objects.get(username=recipient_id)
         # Trigger the notification function
         placement_cell_notif(sender, recipient, type)
 
