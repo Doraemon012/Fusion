@@ -362,10 +362,21 @@ class ChairmanVisit(models.Model):
     def _str_(self):
         return self.company_name
 
+class company_registration(models.Model):
+    name = models.CharField(max_length=50)
+    description = models.CharField(max_length=100)
+    address = models.CharField(max_length=100)
+    web_url = models.URLField()
+    company_logo = models.ImageField(upload_to='placement_cell/company_logos/')
 
+    
+    def _str_(self):
+        return str(self.name)
+    
 class PlacementSchedule(models.Model):
     notify_id = models.ForeignKey(NotifyStudent, on_delete=models.CASCADE)
     title = models.CharField(max_length=100, default='')
+    company_id = models.ForeignKey(company_registration, on_delete=models.CASCADE,null=True, blank=True)
     placement_date = models.DateField(_("Date"), default=datetime.date.today)
     location = models.CharField(max_length=100, default='')
     description = models.TextField(max_length=500, default='', null=True, blank=True)
@@ -454,7 +465,7 @@ class CustomField(models.Model):
 
 
 class Placementform_fields(models.Model):
-    company_id = models.ForeignKey(NotifyStudent, on_delete=models.CASCADE)
+    company_id = models.ForeignKey(PlacementSchedule, on_delete=models.CASCADE)
     custom_field = models.ForeignKey(CustomField, on_delete=models.CASCADE)
 
     class Meta:
@@ -466,8 +477,9 @@ class Placementform_fields(models.Model):
 
 class PlacementForm_responses(models.Model):
     unique_id = models.ForeignKey(Student, on_delete=models.CASCADE)
-    company_id = models.ForeignKey(NotifyStudent, on_delete=models.CASCADE)
+    company_id = models.ForeignKey(PlacementSchedule, on_delete=models.CASCADE)
     field_id = models.ForeignKey(CustomField, on_delete=models.CASCADE)
+    value = models.JSONField(default=dict)
 
     class Meta:
         unique_together = (('company_id', 'unique_id', 'field_id'),)  
@@ -476,16 +488,6 @@ class PlacementForm_responses(models.Model):
         return str(self.unique_id.id)
     
 
-class company_registration(models.Model):
-    name = models.CharField(max_length=50)
-    description = models.CharField(max_length=100)
-    address = models.CharField(max_length=100)
-    web_url = models.URLField()
-    company_logo = models.ImageField(upload_to='placement_cell/company_logos/')
-
-    
-    def _str_(self):
-        return str(self.name)
 
 class GlobalRestrictions(models.Model):
     criteria = models.CharField(max_length=20)

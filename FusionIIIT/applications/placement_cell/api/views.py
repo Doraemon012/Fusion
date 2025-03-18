@@ -45,12 +45,16 @@ class PlacementScheduleView(APIView):
             for global_restriction in global_restrictions:
                 value = global_restriction.value  
                 if global_restriction.criteria == "company":
-                    statistics = PlacementRecord.objects.get(name=value)
-                    record = StudentRecord.objects.filter(unique_id_id=request.user.username,record_id=statistics).count()
-                    if global_restriction.condition == "equal" and record==1:
-                        debar_status=1
-                    elif global_restriction.condition == "not_equal" and record==0:
-                        debar_status=1
+                    try:
+                        statistics = PlacementRecord.objects.get(name=value)
+                    except:
+                        statistics = None
+                    if statistics!=None:
+                        record = StudentRecord.objects.filter(unique_id_id=request.user.username,record_id=statistics).count()
+                        if global_restriction.condition == "equal" and record==1:
+                            debar_status=1
+                        elif global_restriction.condition == "not_equal" and record==0:
+                            debar_status=1
 
                 if global_restriction.criteria == "ctc":
                     value = int(value)
@@ -74,16 +78,16 @@ class PlacementScheduleView(APIView):
         for notify in notify_students:
             placements = PlacementSchedule.objects.filter(notify_id=notify.id)
             if request.user.username != 'omvir' and request.user.username!='anilk':
-                print('entered')
+                # print('entered')
                 eligibility = Eligibility.objects.get(company_id_id = notify.id)
                 if eligibility.cpi > student.cpi:
-                    print(eligibility.cpi,student.cpi)
+                    # print(eligibility.cpi,student.cpi)
                     continue
                 if eligibility.gender!='All' and eligibility.gender!=cur_gender:
-                    print(eligibility.gender,cur_gender)
+                    # print(eligibility.gender,cur_gender)
                     continue
                 if student.batch+4!=eligibility.passout_year and eligibility.passout_year!=-1:
-                    print(student.batch+4,eligibility.passout_year)
+                    # print(student.batch+4,eligibility.passout_year)
                     continue
             print('entered')
             placement_serializer = PlacementScheduleSerializer(placements, many=True)
@@ -104,6 +108,7 @@ class PlacementScheduleView(APIView):
         print(request.data)
         placement_type = request.data.get("placement_type")
         company_name = request.data.get("company_name")
+        company_id = request.data.get("company_id")
         ctc = request.data.get("ctc")
         description = request.data.get("description")
         schedule_at = request.data.get("schedule_at")
@@ -115,6 +120,8 @@ class PlacementScheduleView(APIView):
         branch = request.data.get("branch")
         gender = request.data.get("gender")
         passout = request.data.get("passoutyr")
+        # fields = request.data.get("fields")
+
 
         try:
             role_create, _ = Role.objects.get_or_create(role=role)
@@ -126,9 +133,10 @@ class PlacementScheduleView(APIView):
                 timestamp=schedule_at,
             )
 
-            schedule = PlacementSchedule.objects.create(
+            PlacementSchedule.objects.create(
                 notify_id=notify,
                 title=company_name,
+                company_id_id=company_id,
                 description=description,
                 placement_date=date,
                 attached_file=resume,
@@ -137,13 +145,22 @@ class PlacementScheduleView(APIView):
                 time=schedule_at,
             )
 
-            eligibility = Eligibility.objects.create(
+            Eligibility.objects.create(
                 company_id = notify,
                 cpi = cpi,
                 branch=branch,
                 gender=gender,
                 passout_year=passout,
             )
+
+            # for field in fields:
+            #     field_obj = CustomField.objects.get(id=field)
+            #     Placementform_fields.objects.create(
+            #         company_id = notify,
+            #         custom_field = field_obj,
+            #     )
+
+                
 
             return JsonResponse({"message": "Successfully Added Schedule"}, status=201)
 
@@ -627,7 +644,6 @@ class TrackStatus(APIView):
                 data.append({
                     'round_no': 0,
                     'test_name': 'Yet to be updated',
-                    
                 })
             
             else:
@@ -834,6 +850,7 @@ class FieldsAddition(APIView):
             # print(fields)
             for field in fields:
                 data.append({
+                    'id':field.id,
                     'name':field.field_name,
                     'type':field.field_type,
                     'required':field.required,
@@ -854,8 +871,8 @@ class GlobalRestriction(APIView):
                                                             value = request.data['value']).count()
             if check>0: 
                 return Response("Already exists",status=status.HTTP_207_MULTI_STATUS)
-            print(request.data)
-            restriction = GlobalRestrictions.objects.create(
+            # print(request.data)
+            GlobalRestrictions.objects.create(
                 criteria=request.data['criteria'],
                 condition=request.data['condition'],
                 value=request.data['value'],
@@ -864,7 +881,7 @@ class GlobalRestriction(APIView):
 
             return Response("successfully created",status=status.HTTP_200_OK)
         except Exception as e:
-            print(e)
+            # print(e)
             return Response("failed to add",status=status.HTTP_406_NOT_ACCEPTABLE)
     
     def get(self,request):
@@ -922,18 +939,64 @@ class CompanyRegistration(APIView):
     def get(self, request):
         try:
             companies = company_registration.objects.all()
+            # print("entered")
             data = []
             for comp in companies:
                 data.append({
                     "id": comp.id,
-                    "name": comp.name,
+                    "companyName": comp.name,
                     "description": comp.description,
                     "address": comp.address,
-                    "web_url": comp.web_url,
-                    "company_logo": request.build_absolute_uri(comp.company_logo.url) if comp.company_logo else None,
+                    "website": comp.web_url,
+                    "logo": request.build_absolute_uri(comp.company_logo.url) if comp.company_logo else None,
                 })
             return Response(data, status=status.HTTP_200_OK)
 
         except Exception as e:
             print(e)
             return Response("failed", status=status.HTTP_304_NOT_MODIFIED)
+
+
+@permission_classes([IsAuthenticated])
+class FormFields(APIView):
+    def get(self,request):
+        try:
+            placement_id = request.data.get('jobId')
+            fields = Placementform_fields.objects.filter(company_id_id=placement_id)
+            data = []
+
+            for field in fields:
+                field_obj = CustomField.objects.get(id=field.custom_field_id);
+                data.append({
+                    "name":field_obj.field_name,
+                    "type":field_obj.field_type,
+                    "required":field_obj.required,
+                })
+            
+            return Response("Successfully created",status=status.HTTP_200_OK)
+                
+        except:
+            return Response("error occured",status=status.HTTP_204_NO_CONTENT)
+
+
+@permission_classes([IsAuthenticated])
+class StudentResponses(APIView):
+    def post(self,request):
+        try:
+            company_id = request.data.get('jobId')
+            responses = request.data.get('responses')
+            roll_no = request.user.username
+
+            for response in responses:
+                field_id = response.field_id
+                PlacementForm_responses.objects.create(
+                    unique_id_id = roll_no,
+                    company_id_id = company_id,
+                    field_id = CustomField.objects.get(id=field_id),
+                    value = response.value,
+                )
+
+            return Response("Successfully created",status=status.HTTP_200_OK)
+            
+        except:
+            return Response("error occured",status=status.HTTP_204_NO_CONTENT)
