@@ -20,4 +20,6 @@ urlpatterns = [
     path('add-field/',FieldsAddition.as_view()),
     path('restrictions/',GlobalRestriction.as_view()),
     path('registration/',CompanyRegistration.as_view()),
+    path('apply-for-placement/',StudentResponses.as_view()),
+    path('form-fields/',FormFields.as_view()),
 ]
