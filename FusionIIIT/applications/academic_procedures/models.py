@@ -617,7 +617,8 @@ class InitialRegistration(models.Model):
     
     class Meta:
         db_table = 'InitialRegistration'
-    
+
+
 class FinalRegistration(models.Model):
     '''
             Current Purpose : stores information regarding the process of final(complete) registration of a student for a course 
@@ -652,6 +653,7 @@ class FinalRegistration(models.Model):
 
     class Meta:
         db_table = 'FinalRegistration'
+        unique_together = ('course_id', 'student_id', 'semester_id', 'registration_type')
 
 
 class CourseRequested(models.Model):
@@ -705,24 +707,13 @@ class course_registration(models.Model):
     semester_id = models.ForeignKey(Semester, on_delete=models.CASCADE)
     course_id = models.ForeignKey(Courses, on_delete=models.CASCADE)
     course_slot_id = models.ForeignKey(CourseSlot, null=True, blank=True, on_delete=models.SET_NULL)
-    REGISTRATION_TYPE_CHOICES = [
-        ('Audit', 'Audit'),
-        ('Improvement', 'Improvement'),
-        ('Backlog', 'Backlog'),
-        ('Regular', 'Regular'),
-    ]
-    registration_type = models.CharField(
-        max_length=20,
-        choices=REGISTRATION_TYPE_CHOICES,
-        default='Regular',
-    )
     # grade = models.CharField(max_length=10)
     #course_registration_year = models.IntegerField()
     def __str__(self):
         return str(self.semester_id.semester_no)
     class Meta:
         db_table = 'course_registration'
-        unique_together = ('course_id', 'student_id', 'semester_id', 'registration_type')
+
 
 class backlog_course(models.Model):
     '''

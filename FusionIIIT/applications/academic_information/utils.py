@@ -1,19 +1,33 @@
-from applications.academic_information.models import (Calendar, Student,Curriculum_Instructor, Curriculum,
-                                                      Student_attendance)
-from ..academic_procedures.models import (BranchChange, CoursesMtech, InitialRegistration, StudentRegistrationChecks,
-                     Register, Thesis, FinalRegistration, ThesisTopicProcess,
-                     Constants, FeePayments, TeachingCreditRegistration, SemesterMarks, 
-                     MarkSubmissionCheck, Dues,AssistantshipClaim, MTechGraduateSeminarReport,
-                     PhDProgressExamination,CourseRequested, course_registration, MessDue, Assistantship_status , backlog_course,)
-
-from applications.programme_curriculum.models import(Course,CourseSlot,Batch,Semester)
-from django.http import HttpResponse, JsonResponse
-from django.utils import timezone
-from django.core import serializers
-from django.db.models import Q
 import datetime
 import random
+
+from applications.academic_information.models import (Calendar, Curriculum,
+                                                      Curriculum_Instructor,
+                                                      Student,
+                                                      Student_attendance)
+from applications.programme_curriculum.models import (Batch, Course,
+                                                      CourseSlot, Semester)
+from django.core import serializers
 from django.db import transaction
+from django.db.models import Q
+from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
+
+from ..academic_procedures.models import (Assistantship_status,
+                                          AssistantshipClaim, BranchChange,
+                                          Constants, CourseRequested,
+                                          CoursesMtech, Dues, FeePayments,
+                                          FinalRegistration,
+                                          InitialRegistration,
+                                          MarkSubmissionCheck, MessDue,
+                                          MTechGraduateSeminarReport,
+                                          PhDProgressExamination, Register,
+                                          SemesterMarks,
+                                          StudentRegistrationChecks,
+                                          TeachingCreditRegistration, Thesis,
+                                          ThesisTopicProcess, backlog_course,
+                                          course_registration)
+
 time = timezone.now()
 def check_for_registration_complete (request):
     batch = int(request.POST.get('batch'))
